@@ -1,0 +1,57 @@
+version: '3'
+services:
+
+  #PHP Service
+  matomo:
+    build: ./app
+    container_name: matomo
+    restart: unless-stopped
+    tty: true
+    environment:
+      SERVICE_NAME: matomo
+      SERVICE_TAGS: dev
+    working_dir: /var/www/matomo
+    volumes:
+      - ./app:/var/www
+      - ./php/local.ini:/usr/local/etc/php/conf.d/local.ini
+    networks:
+      - matomo-network
+
+  #Nginx Service
+  webserver_matomo:
+    image: nginx:alpine
+    container_name: webserver_matomo
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes: 
+      - ./app:/var/www
+      - ./nginx/conf.d/app.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - matomo-network
+
+  #MySQL Service
+  db_matomo:
+    image: mysql:5.7.22
+    container_name: db_matomo
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "3366:3306"
+    volumes:
+      - ./dbdata:/var/lib/mysql
+      - ./mysql/my.cnf:/etc/mysql/my.cnf
+    environment:
+      MYSQL_DATABASE: matomo
+      MYSQL_ROOT_PASSWORD: matomopasssword
+      SERVICE_TAGS: dev
+      SERVICE_NAME: mysql
+    networks:
+      - matomo-network
+
+#Docker Networks
+networks:
+  matomo-network:
+    driver: bridge
